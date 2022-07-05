@@ -23,6 +23,7 @@ import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 用于描述 Mapper XML 文件中配置的SQL资源信息，通常是包含了动态SQL配置
  * @author Clinton Begin
  */
 public class DynamicSqlSource implements SqlSource {

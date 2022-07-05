@@ -26,6 +26,7 @@ import org.apache.ibatis.scripting.xmltags.SqlNode;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 用于描述 Mapper XML 文件中配置的SQL资源信息，是在解析Mapper XML配置时就能确定，不包含动态SQL相关配置
  * Static SqlSource. It is faster than {@link DynamicSqlSource} because mappings are
  * calculated during startup.
  *

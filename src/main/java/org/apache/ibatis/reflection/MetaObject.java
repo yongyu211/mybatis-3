@@ -46,7 +46,7 @@ public class MetaObject {
 
     if (object instanceof ObjectWrapper) {
       this.objectWrapper = (ObjectWrapper) object;
-    } else if (objectWrapperFactory.hasWrapperFor(object)) {
+    } else if (objectWrapperFactory.hasWrapperFor(object)) {// 默认返回false，不会进入
       this.objectWrapper = objectWrapperFactory.getWrapperFor(this, object);
     } else if (object instanceof Map) {
       this.objectWrapper = new MapWrapper(this, (Map) object);

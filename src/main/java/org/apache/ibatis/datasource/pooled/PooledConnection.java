@@ -29,6 +29,9 @@ import org.apache.ibatis.reflection.ExceptionUtil;
 class PooledConnection implements InvocationHandler {
 
   private static final String CLOSE = "close";
+  /**
+   * JDK Proxy 的接口
+   */
   private static final Class<?>[] IFACES = new Class<?>[] { Connection.class };
 
   private final int hashCode;
@@ -232,16 +235,19 @@ class PooledConnection implements InvocationHandler {
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     String methodName = method.getName();
+    // <1> 判断是否为 CLOSE 方法，则将连接放回到连接池中，避免连接被关闭
     if (CLOSE.hashCode() == methodName.hashCode() && CLOSE.equals(methodName)) {
       dataSource.pushConnection(this);
       return null;
     }
     try {
+      // 判断非 Object 的方法，则先检查连接是否可用
       if (!Object.class.equals(method.getDeclaringClass())) {
         // issue #579 toString() should never fail
         // throw an SQLException instead of a Runtime
         checkConnection();
       }
+      // 反射调用对应的方法
       return method.invoke(realConnection, args);
     } catch (Throwable t) {
       throw ExceptionUtil.unwrapThrowable(t);

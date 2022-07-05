@@ -32,6 +32,8 @@ public class Plugin implements InvocationHandler {
 
   private final Object target;
   private final Interceptor interceptor;
+
+  // 缓存需拦截对象的反射结果，避免多次反射，即 target 的反射结果
   private final Map<Class<?>, Set<Method>> signatureMap;
 
   private Plugin(Object target, Interceptor interceptor, Map<Class<?>, Set<Method>> signatureMap) {
@@ -57,7 +59,9 @@ public class Plugin implements InvocationHandler {
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     try {
       Set<Method> methods = signatureMap.get(method.getDeclaringClass());
+      // 判断是否是需要拦截的方法(很重要)
       if (methods != null && methods.contains(method)) {
+        // 回调intercept()方法
         return interceptor.intercept(new Invocation(target, method, args));
       }
       return method.invoke(target, args);

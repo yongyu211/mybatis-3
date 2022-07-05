@@ -90,14 +90,21 @@ public class XMLMapperBuilder extends BaseBuilder {
   }
 
   public void parse() {
+    // 检查当前Mapper是否已经加载过
     if (!configuration.isResourceLoaded(resource)) {
+      // 解析 <mapper /> 结点
       configurationElement(parser.evalNode("/mapper"));
+      // 标记该 Mapper 已经加载过
       configuration.addLoadedResource(resource);
+      // 绑定 Mapper
       bindMapperForNamespace();
     }
 
+    // 解析待定的 <resultMap /> 节点
     parsePendingResultMaps();
+    // 解析待定的 <cache-ref /> 节点
     parsePendingCacheRefs();
+    // 解析待定的 SQL 语句的节点
     parsePendingStatements();
   }
 
@@ -107,16 +114,29 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private void configurationElement(XNode context) {
     try {
+      // 获取并设置namespace属性
       String namespace = context.getStringAttribute("namespace");
       if (namespace == null || namespace.equals("")) {
         throw new BuilderException("Mapper's namespace cannot be empty");
       }
       builderAssistant.setCurrentNamespace(namespace);
+
+      // 解析 <cache-ref /> 节点
       cacheRefElement(context.evalNode("cache-ref"));
+
+      // 解析 <cache /> 节点
       cacheElement(context.evalNode("cache"));
+
+      // 解析 <parameterMap /> 节点
       parameterMapElement(context.evalNodes("/mapper/parameterMap"));
+
+      // 解析 <resultMap /> 节点
       resultMapElements(context.evalNodes("/mapper/resultMap"));
+
+      // 解析 <sql /> 节点们
       sqlElement(context.evalNodes("/mapper/sql"));
+
+      // 解析 <select /> <insert /> <update /> <delete /> 节点
       buildStatementFromContext(context.evalNodes("select|insert|update|delete"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing Mapper XML. The XML location is '" + resource + "'. Cause: " + e, e);

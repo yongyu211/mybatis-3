@@ -32,10 +32,19 @@ import org.apache.ibatis.mapping.StatementType;
 public @interface SelectKey {
   String[] statement();
 
+  /**
+   * @return Java 对象的属性
+   */
   String keyProperty();
 
+  /**
+   * @return 数据库的字段
+   */
   String keyColumn() default "";
 
+  /**
+   * @return 在插入语句执行前，还是执行后
+   */
   boolean before();
 
   Class<?> resultType();

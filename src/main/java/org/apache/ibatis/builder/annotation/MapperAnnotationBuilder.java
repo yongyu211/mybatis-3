@@ -136,6 +136,7 @@ public class MapperAnnotationBuilder {
         try {
           // issue #237
           if (!method.isBridge()) {
+            // 解析方法上的SQL
             parseStatement(method);
           }
         } catch (IncompleteElementException e) {
@@ -296,6 +297,12 @@ public class MapperAnnotationBuilder {
     return null;
   }
 
+  /***
+   * 解析方法上的SQL操作相关的注解
+   * @param method
+   * @return
+   * @throws
+   */
   void parseStatement(Method method) {
     Class<?> parameterTypeClass = getParameterType(method);
     LanguageDriver languageDriver = getLanguageDriver(method);
@@ -317,13 +324,14 @@ public class MapperAnnotationBuilder {
       String keyColumn = null;
       if (SqlCommandType.INSERT.equals(sqlCommandType) || SqlCommandType.UPDATE.equals(sqlCommandType)) {
         // first check for SelectKey annotation - that overrides everything else
+        // 如果有 @SelectKey 注解，则进行处理
         SelectKey selectKey = method.getAnnotation(SelectKey.class);
         if (selectKey != null) {
           keyGenerator = handleSelectKeyAnnotation(selectKey, mappedStatementId, getParameterType(method), languageDriver);
           keyProperty = selectKey.keyProperty();
-        } else if (options == null) {
+        } else if (options == null) { // 如果无 @Options 注解，则根据全局配置处理
           keyGenerator = configuration.isUseGeneratedKeys() ? Jdbc3KeyGenerator.INSTANCE : NoKeyGenerator.INSTANCE;
-        } else {
+        } else { // 如果有 @Options 注解，则使用该注解的配置处理
           keyGenerator = options.useGeneratedKeys() ? Jdbc3KeyGenerator.INSTANCE : NoKeyGenerator.INSTANCE;
           keyProperty = options.keyProperty();
           keyColumn = options.keyColumn();
@@ -346,6 +354,7 @@ public class MapperAnnotationBuilder {
       }
 
       String resultMapId = null;
+      // 如果有 @ResultMap 注解，使用该注解为 resultMapId 属性
       ResultMap resultMapAnnotation = method.getAnnotation(ResultMap.class);
       if (resultMapAnnotation != null) {
         String[] resultMaps = resultMapAnnotation.value();
@@ -361,6 +370,7 @@ public class MapperAnnotationBuilder {
         resultMapId = parseResultMap(method);
       }
 
+      // 构建 MappedStatement 对象
       assistant.addMappedStatement(
           mappedStatementId,
           sqlSource,

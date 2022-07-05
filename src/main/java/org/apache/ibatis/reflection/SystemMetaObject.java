@@ -22,6 +22,7 @@ import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 
 /**
  * @author Clinton Begin
+ * 系统级的MetaObject对象
  */
 public final class SystemMetaObject {
 

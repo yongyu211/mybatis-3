@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * Mapper 注册表
  * @author Clinton Begin
  * @author Eduardo Macarron
  * @author Lasse Voss
@@ -91,8 +92,10 @@ public class MapperRegistry {
    */
   public void addMappers(String packageName, Class<?> superType) {
     ResolverUtil<Class<?>> resolverUtil = new ResolverUtil<>();
+    // 扫描指定包下的指定类
     resolverUtil.find(new ResolverUtil.IsA(superType), packageName);
     Set<Class<? extends Class<?>>> mapperSet = resolverUtil.getClasses();
+    // 遍历，添加到 knownMappers 中
     for (Class<?> mapperClass : mapperSet) {
       addMapper(mapperClass);
     }

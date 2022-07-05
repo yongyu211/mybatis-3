@@ -29,6 +29,7 @@ import org.apache.ibatis.reflection.ParamNameResolver;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 用于描述通过@select、@selectProvider等注解配置的SQL资源信息
  * @author Clinton Begin
  * @author Kazuki Shimizu
  */

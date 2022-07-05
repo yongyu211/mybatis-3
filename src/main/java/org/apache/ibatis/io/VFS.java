@@ -28,6 +28,7 @@ import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 
 /**
+ * 虚拟文件系统抽象类
  * Provides a very simple API for accessing resources within an application server.
  *
  * @author Ben Gunter
@@ -42,6 +43,9 @@ public abstract class VFS {
   public static final List<Class<? extends VFS>> USER_IMPLEMENTATIONS = new ArrayList<>();
 
   /** Singleton instance holder. */
+  /**
+   * 静态内部类实现单例
+   */
   private static class VFSHolder {
     static final VFS INSTANCE = createVFS();
 

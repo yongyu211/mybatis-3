@@ -30,6 +30,7 @@ public final class LogFactory {
 
   private static Constructor<? extends Log> logConstructor;
 
+  // 按照顺序查找相关log框架
   static {
     tryImplementation(LogFactory::useSlf4jLogging);
     tryImplementation(LogFactory::useCommonsLogging);

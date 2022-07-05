@@ -31,6 +31,7 @@ import org.apache.ibatis.datasource.DataSourceFactory;
  */
 public class JndiDataSourceFactory implements DataSourceFactory {
 
+  // 该属性用来在 InitialContext 中寻找上下文
   public static final String INITIAL_CONTEXT = "initial_context";
   public static final String DATA_SOURCE = "data_source";
   public static final String ENV_PREFIX = "env.";
@@ -48,6 +49,7 @@ public class JndiDataSourceFactory implements DataSourceFactory {
         initCtx = new InitialContext(env);
       }
 
+      // 从 InitialContext 上下文中，获取 DataSource 对象
       if (properties.containsKey(INITIAL_CONTEXT)
           && properties.containsKey(DATA_SOURCE)) {
         Context ctx = (Context) initCtx.lookup(properties.getProperty(INITIAL_CONTEXT));
@@ -73,7 +75,7 @@ public class JndiDataSourceFactory implements DataSourceFactory {
       String key = (String) entry.getKey();
       String value = (String) entry.getValue();
       if (key.startsWith(PREFIX)) {
-        if (contextProperties == null) {
+          if (contextProperties == null) {
           contextProperties = new Properties();
         }
         contextProperties.put(key.substring(PREFIX.length()), value);

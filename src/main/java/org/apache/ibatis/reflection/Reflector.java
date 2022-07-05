@@ -46,22 +46,52 @@ import org.apache.ibatis.reflection.property.PropertyNamer;
  */
 public class Reflector {
 
+  /**
+   * 对应的类
+   */
   private final Class<?> type;
+  /**
+   * 可读属性数组
+   */
   private final String[] readablePropertyNames;
+  /**
+   * 可写属性数组
+   */
   private final String[] writeablePropertyNames;
+  /**
+   * 属性对应的set方法的映射
+   */
   private final Map<String, Invoker> setMethods = new HashMap<>();
+  /**
+   * 属性对应的get方法的映射
+   */
   private final Map<String, Invoker> getMethods = new HashMap<>();
+  /**
+   * 属性对应的set方法的方法参数类型的映射
+   */
   private final Map<String, Class<?>> setTypes = new HashMap<>();
+  /**
+   * 属性对应的get方法返回值类型的映射
+   */
   private final Map<String, Class<?>> getTypes = new HashMap<>();
+  /**
+   * 默认构造方法
+   */
   private Constructor<?> defaultConstructor;
-
+  /**
+   * 不区分大小写的属性映射
+   */
   private Map<String, String> caseInsensitivePropertyMap = new HashMap<>();
 
   public Reflector(Class<?> clazz) {
     type = clazz;
+    // 初始化 defaultConstructor
     addDefaultConstructor(clazz);
+    // 初始化 getMethods
     addGetMethods(clazz);
+    // 初始化 setMethods
     addSetMethods(clazz);
+    // 初始化其他属性，这些属性没有对应的 set 和 get
     addFields(clazz);
     readablePropertyNames = getMethods.keySet().toArray(new String[getMethods.keySet().size()]);
     writeablePropertyNames = setMethods.keySet().toArray(new String[setMethods.keySet().size()]);
@@ -76,6 +106,7 @@ public class Reflector {
   private void addDefaultConstructor(Class<?> clazz) {
     Constructor<?>[] consts = clazz.getDeclaredConstructors();
     for (Constructor<?> constructor : consts) {
+      // 无惨构造方法 --> defaultConstructor
       if (constructor.getParameterTypes().length == 0) {
           this.defaultConstructor = constructor;
       }
@@ -85,31 +116,42 @@ public class Reflector {
   private void addGetMethods(Class<?> cls) {
     Map<String, List<Method>> conflictingGetters = new HashMap<>();
     Method[] methods = getClassMethods(cls);
+    // 遍历所有方法
     for (Method method : methods) {
+      // 过滤有参数的方法，get方法一般么有参数
       if (method.getParameterTypes().length > 0) {
         continue;
       }
       String name = method.getName();
+      // 满足getXXXX() 或 isXXXX()的方法
       if ((name.startsWith("get") && name.length() > 3)
           || (name.startsWith("is") && name.length() > 2)) {
+        // 将方法名转换为属性名称
         name = PropertyNamer.methodToProperty(name);
+        // 添加到 conflictingGetters
         addMethodConflict(conflictingGetters, name, method);
       }
     }
+    // 解决 get 冲突方法
     resolveGetterConflicts(conflictingGetters);
   }
 
   private void resolveGetterConflicts(Map<String, List<Method>> conflictingGetters) {
+    // 遍历每个属性，查找其最匹配的方法。
+    // 因为子类可以覆写父类的方法，所以一个属性，可能对应多个 getting 方法
     for (Entry<String, List<Method>> entry : conflictingGetters.entrySet()) {
-      Method winner = null;
+      Method winner = null; // 最匹配的方法
       String propName = entry.getKey();
       for (Method candidate : entry.getValue()) {
+        // winner 为空，说明 candidate 为最匹配的方法
         if (winner == null) {
           winner = candidate;
           continue;
         }
+        // 基于返回类型比较
         Class<?> winnerType = winner.getReturnType();
         Class<?> candidateType = candidate.getReturnType();
+        // 类型相同
         if (candidateType.equals(winnerType)) {
           if (!boolean.class.equals(candidateType)) {
             throw new ReflectionException(
@@ -119,24 +161,35 @@ public class Reflector {
           } else if (candidate.getName().startsWith("is")) {
             winner = candidate;
           }
-        } else if (candidateType.isAssignableFrom(winnerType)) {
+        }
+        // 不符合选择子类
+        else if (candidateType.isAssignableFrom(winnerType)) {
           // OK getter type is descendant
-        } else if (winnerType.isAssignableFrom(candidateType)) {
+        }
+        // 符合选择子类。因为子类可以修改放大返回值。
+        // 例如，父类的一个方法的返回值为 List ，子类对该方法的返回值可以覆写为 ArrayList
+        else if (winnerType.isAssignableFrom(candidateType)) {
           winner = candidate;
-        } else {
+        }
+        // 返回类型冲突，抛出 ReflectionException 异常
+        else {
           throw new ReflectionException(
               "Illegal overloaded getter method with ambiguous type for property "
                   + propName + " in class " + winner.getDeclaringClass()
                   + ". This breaks the JavaBeans specification and can cause unpredictable results.");
         }
       }
+      // 添加到 getMethods 和 getTypes 中
       addGetMethod(propName, winner);
     }
   }
 
   private void addGetMethod(String name, Method method) {
+    // 校验属性名称
     if (isValidPropertyName(name)) {
+      // 添加到 getMethods
       getMethods.put(name, new MethodInvoker(method));
+      // 添加到 getTypes
       Type returnType = TypeParameterResolver.resolveReturnType(method, type);
       getTypes.put(name, typeToClass(returnType));
     }
@@ -145,9 +198,11 @@ public class Reflector {
   private void addSetMethods(Class<?> cls) {
     Map<String, List<Method>> conflictingSetters = new HashMap<>();
     Method[] methods = getClassMethods(cls);
+    // 遍历所有方法
     for (Method method : methods) {
       String name = method.getName();
       if (name.startsWith("set") && name.length() > 3) {
+        // 筛选出只有一个参数的方法
         if (method.getParameterTypes().length == 1) {
           name = PropertyNamer.methodToProperty(name);
           addMethodConflict(conflictingSetters, name, method);
@@ -163,6 +218,8 @@ public class Reflector {
   }
 
   private void resolveSetterConflicts(Map<String, List<Method>> conflictingSetters) {
+    // 遍历每个属性，查找其最匹配的方法。
+    // 因为子类可以覆写父类的方法，所以一个属性，可能对应多个 set 方法
     for (String propName : conflictingSetters.keySet()) {
       List<Method> setters = conflictingSetters.get(propName);
       Class<?> getterType = getTypes.get(propName);
@@ -170,6 +227,7 @@ public class Reflector {
       ReflectionException exception = null;
       for (Method setter : setters) {
         Class<?> paramType = setter.getParameterTypes()[0];
+        // paramType 和 getterType 相同，直接使用
         if (paramType.equals(getterType)) {
           // should be the best match
           match = setter;

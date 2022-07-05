@@ -137,6 +137,7 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
       if (typeHandlers == null) {
         typeHandlers = getTypeHandlers(typeHandlerRegistry, metaParam, keyProperties, rsmd);
       }
+      // 赋值
       populateKeys(rs, metaParam, keyProperties, typeHandlers);
     }
   }
@@ -172,11 +173,13 @@ public class Jdbc3KeyGenerator implements KeyGenerator {
   }
 
   private void populateKeys(ResultSet rs, MetaObject metaParam, String[] keyProperties, TypeHandler<?>[] typeHandlers) throws SQLException {
+    // 主键字段，可能是多个（一般情况下，是一个）
     for (int i = 0; i < keyProperties.length; i++) {
       String property = keyProperties[i];
       TypeHandler<?> th = typeHandlers[i];
       if (th != null) {
         Object value = th.getResult(rs, i + 1);
+        // 反射赋值
         metaParam.setValue(property, value);
       }
     }

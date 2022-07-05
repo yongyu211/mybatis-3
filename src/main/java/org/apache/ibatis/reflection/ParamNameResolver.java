@@ -28,6 +28,9 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
+/**
+ * 参数名解析器
+ */
 public class ParamNameResolver {
 
   private static final String GENERIC_NAME_PREFIX = "param";
@@ -61,6 +64,7 @@ public class ParamNameResolver {
         continue;
       }
       String name = null;
+      // 首先，从 @Param 注解中获取参数
       for (Annotation annotation : paramAnnotations[paramIndex]) {
         if (annotation instanceof Param) {
           hasParamAnnotation = true;
@@ -70,9 +74,11 @@ public class ParamNameResolver {
       }
       if (name == null) {
         // @Param was not specified.
+        // 其次，获取真实的参数名
         if (config.isUseActualParamName()) {
           name = getActualParamName(method, paramIndex);
         }
+        // 最后，使用 map 的顺序，作为编号
         if (name == null) {
           // use the parameter index as the name ("0", "1", ...)
           // gcode issue #71
@@ -117,8 +123,10 @@ public class ParamNameResolver {
       final Map<String, Object> param = new ParamMap<>();
       int i = 0;
       for (Map.Entry<Integer, String> entry : names.entrySet()) {
+        // 组合 1 ：KEY：参数名，VALUE：参数值，添加到param中
         param.put(entry.getValue(), args[entry.getKey()]);
-        // add generic param names (param1, param2, ...)
+
+        // 组合 2 ：KEY：GENERIC_NAME_PREFIX + 参数顺序，VALUE ：参数值，添加到param中
         final String genericParamName = GENERIC_NAME_PREFIX + String.valueOf(i + 1);
         // ensure not to overwrite parameter named with @Param
         if (!names.containsValue(genericParamName)) {

@@ -20,10 +20,27 @@ import java.util.Iterator;
 /**
  * @author Clinton Begin
  */
+
+/**
+ * 属性分词器
+ * 在访问 "order[0].item[0].name" 时，可以拆分成 "order[0]"、"item[0]"、"name" 三段，
+ * 那么就可以通过 PropertyTokenizer 来实现
+ */
 public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
+  /**
+   * 当前字符串
+   */
   private String name;
   private final String indexedName;
+  /**
+   * 编号
+   * 对于数组 name[0] ，则 index = 0
+   * 对于 Map map[key] ，则 index = key
+   */
   private String index;
+  /**
+   * 剩余字符串
+   */
   private final String children;
 
   public PropertyTokenizer(String fullname) {

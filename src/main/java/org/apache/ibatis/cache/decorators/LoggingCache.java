@@ -22,13 +22,26 @@ import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 
 /**
+ * 支持打印日志的 Cache 实现类
  * @author Clinton Begin
  */
 public class LoggingCache implements Cache {
 
   private final Log log;
+
+  /**
+   * 装饰的Cache对象
+   */
   private final Cache delegate;
+
+  /**
+   * 请求缓存的次数
+   */
   protected int requests = 0;
+
+  /**
+   * 命中缓存的次数
+   */
   protected int hits = 0;
 
   public LoggingCache(Cache delegate) {

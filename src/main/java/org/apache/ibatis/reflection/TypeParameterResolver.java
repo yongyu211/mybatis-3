@@ -31,6 +31,7 @@ import java.util.Arrays;
 public class TypeParameterResolver {
 
   /**
+   * 解析属性类型
    * @return The field type as {@link Type}. If it has type parameters in the declaration,<br>
    *         they will be resolved to the actual runtime {@link Type}s.
    */
@@ -41,6 +42,7 @@ public class TypeParameterResolver {
   }
 
   /**
+   * 解析方法返回的类型
    * @return The return type of the method as {@link Type}. If it has type parameters in the declaration,<br>
    *         they will be resolved to the actual runtime {@link Type}s.
    */
@@ -51,6 +53,7 @@ public class TypeParameterResolver {
   }
 
   /**
+   * 解析方法中参数的类型数组
    * @return The parameter types of the method as an array of {@link Type}s. If they have type parameters in the declaration,<br>
    *         they will be resolved to the actual runtime {@link Type}s.
    */

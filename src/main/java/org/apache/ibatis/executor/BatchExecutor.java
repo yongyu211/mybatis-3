@@ -19,9 +19,7 @@ import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.executor.keygen.Jdbc3KeyGenerator;
@@ -42,9 +40,19 @@ public class BatchExecutor extends BaseExecutor {
 
   public static final int BATCH_UPDATE_RETURN_VALUE = Integer.MIN_VALUE + 1002;
 
+  /**
+   * 缓存多个Statement对象，每个Statement都是addBatch()后，等待执行
+   */
   private final List<Statement> statementList = new ArrayList<>();
+  /**
+   * 对应的结果集（主要保存了update结果的count数量）
+   */
   private final List<BatchResult> batchResultList = new ArrayList<>();
+  /**
+   * 当前保存的sql，即上次执行的sql
+   */
   private String currentSql;
+
   private MappedStatement currentStatement;
 
   public BatchExecutor(Configuration configuration, Transaction transaction) {
@@ -58,19 +66,22 @@ public class BatchExecutor extends BaseExecutor {
     final BoundSql boundSql = handler.getBoundSql();
     final String sql = boundSql.getSql();
     final Statement stmt;
+    // 要求当前的sql和上一次的currentSql相同，同时MappedStatement也必须相同
     if (sql.equals(currentSql) && ms.equals(currentStatement)) {
+      // 已经存在Statement，取出最后一个Statement，有序
       int last = statementList.size() - 1;
       stmt = statementList.get(last);
       applyTransactionTimeout(stmt);
       handler.parameterize(stmt);//fix Issues 322
       BatchResult batchResult = batchResultList.get(last);
       batchResult.addParameterObject(parameterObject);
-    } else {
+    } else { // 若不存在，则新建一个Statement
       Connection connection = getConnection(ms.getStatementLog());
       stmt = handler.prepare(connection, transaction.getTimeout());
       handler.parameterize(stmt);    //fix Issues 322
       currentSql = sql;
       currentStatement = ms;
+      // 将新建的Statement放到缓存
       statementList.add(stmt);
       batchResultList.add(new BatchResult(ms, sql, parameterObject));
     }
@@ -125,7 +136,9 @@ public class BatchExecutor extends BaseExecutor {
           KeyGenerator keyGenerator = ms.getKeyGenerator();
           if (Jdbc3KeyGenerator.class.equals(keyGenerator.getClass())) {
             Jdbc3KeyGenerator jdbc3KeyGenerator = (Jdbc3KeyGenerator) keyGenerator;
-            jdbc3KeyGenerator.processBatch(ms, stmt, parameterObjects);
+//            jdbc3KeyGenerator.processBatch(ms, stmt, parameterObjects);
+            // 修复批量插入时返回的id为null的bug，应返回id列表
+            jdbc3KeyGenerator.processBatch(ms, stmt, this.getParameters(parameterObjects));
           } else if (!NoKeyGenerator.class.equals(keyGenerator.getClass())) { //issue #141
             for (Object parameter : parameterObjects) {
               keyGenerator.processAfter(this, ms, stmt, parameter);
@@ -151,13 +164,36 @@ public class BatchExecutor extends BaseExecutor {
       }
       return results;
     } finally {
+      // 批处理完成后，清零
       for (Statement stmt : statementList) {
         closeStatement(stmt);
       }
       currentSql = null;
+      // 缓存清空
       statementList.clear();
       batchResultList.clear();
     }
+  }
+
+  public Collection<Object> getParameters(Object parameter) {
+    Collection<Object> parameters = null;
+    if (parameter instanceof Collection) {
+      parameters = (Collection) parameter;
+    } else if (parameter instanceof Map) {
+      Map parameterMap = (Map) parameter;
+      if (parameterMap.containsKey("collection")) {
+        parameters = (Collection) parameterMap.get("collection");
+      } else if (parameterMap.containsKey("list")) {
+        parameters = (List) parameterMap.get("list");
+      } else if (parameterMap.containsKey("array")) {
+        parameters = Arrays.asList((Object[]) parameterMap.get("array"));
+      }
+    }
+    if (parameters == null) {
+      parameters = new ArrayList<Object>();
+      parameters.add(parameter);
+    }
+    return parameters;
   }
 
 }

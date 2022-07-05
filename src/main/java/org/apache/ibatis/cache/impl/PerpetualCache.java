@@ -23,6 +23,7 @@ import org.apache.ibatis.cache.Cache;
 import org.apache.ibatis.cache.CacheException;
 
 /**
+ * 永不过期缓存，基于HashMap实现，Mybatis 的一级缓存
  * @author Clinton Begin
  */
 public class PerpetualCache implements Cache {
